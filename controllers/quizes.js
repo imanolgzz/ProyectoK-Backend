@@ -5,7 +5,7 @@ const client = require("../helpers/postgres.ts");
 // this file is to have the controlers for each route
 
 async function getQuizes(req, res) {
-    client.query("SELECT * FROM quiz", (err, result) => {
+    client.query("SELECT * FROM quiz INNER JOIN topics ON quiz.topic_id = topics.topic_id", (err, result) => {
         if (err) {
         console.log("Error executing query", err);
         res.status(500).json({ message: "Error executing query" });
@@ -20,8 +20,7 @@ async function getQuizById(req, res) {
     console.log("Request params", req.params.id);
     const id = req.params.id;
     client.query(
-        "SELECT * FROM quiz WHERE quiz_id = $1",
-        [id],
+        "SELECT * FROM quiz INNER JOIN topics ON quiz.topic_id = topics.topic_id WHERE quiz.quiz_id = $1",     [id],
         (err, result) => {
         if (err) {
             console.log("Quiz does not exist", err);
@@ -37,6 +36,8 @@ async function getQuizById(req, res) {
         }
     );
 }
+
+
 
 exports.getQuizes = getQuizes;
 exports.getQuizById = getQuizById;
