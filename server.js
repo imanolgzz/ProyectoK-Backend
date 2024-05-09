@@ -11,4 +11,7 @@ app.get('/', (req, res) => {
 const users = require('./routes/users')
 app.use('/users', users)
 
+const quizes = require('./routes/quizes')
+app.use('/quizes', quizes)
+
 app.listen(port);
