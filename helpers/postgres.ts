@@ -5,7 +5,7 @@ const client = new Client({
   password: process.env.POSTGRES_PASSWORD,
   host: process.env.POSTGRES_HOST,
   port: "5432",
-  database: "projectK"
+  database: "ProjectK1.2"
 })
 
 client.connect()
