@@ -1,5 +1,4 @@
 const express = require("express");
-const router = express.Router();
 const client = require("../helpers/postgres.ts");
 
 // this file is to have the controlers for each route
@@ -37,23 +36,38 @@ async function getUserById(req, res) {
     }
   );
 }
+
+
+
 // create a new user NOT READY
 async function createUser(req, res) {
-    const { name, email, password } = req.body;
-  client.query(
-    "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *",
-    [name, email, password],
-    (err, result) => {
-      if (err) {
-        console.log("Error executing query", err);
-        res.status(500).json({ message: "Error executing query" });
-      } else {
-        console.log("Query result", result.rows);
-        res.status(200).json(result.rows);
-      }
+    try{
+        const { username, email, firstName, lastName, isAdmin } = req.body;
+        console.log("Request body", req.body);
+        client.query(
+            "INSERT INTO users (user_name, user_email, first_name, last_name, is_admin) VALUES ($1, $2, $3, $4, $5)",
+            [username, email, firstName, lastName, isAdmin],
+            (err, result) => {
+                if (err) {
+                    console.log("Error executing query", err);
+                    res.status(500).json({ message: "Error executing query" });
+                } else {
+                    console.log("Query result", result.rows);
+                    res.status(200).json({ message: "User created successfully" });
+                }
+            }
+        );
+
+    }catch(err){
+        console.log("Error creating user", err);
+        res.status(500).json({ message: "Error creating user" });
     }
-  );
+
+
+
+
 }
+
 
 exports.getUsers = getUsers;
 exports.getUserById = getUserById;

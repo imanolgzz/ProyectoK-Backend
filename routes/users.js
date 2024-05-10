@@ -7,7 +7,12 @@ const { getUsers, getUserById, createUser } = require("../controllers/users.js")
 router.get("/", getUsers);
 //get user by id
 router.get("/:id", getUserById);
+
+//router.get("/login/:username", loginByUsername);
+
 //create new user NOT READY
 router.post("/", createUser);
+
+
 
 module.exports = router;

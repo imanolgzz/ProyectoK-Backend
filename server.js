@@ -7,6 +7,8 @@ app.get('/', (req, res) => {
   console.log("Route / is working fine")
   res.status(200).json({message: "It´s working fine"})
 });
+// to read json body
+app.use(express.json());
 
 const users = require('./routes/users')
 app.use('/users', users)
