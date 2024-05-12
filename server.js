@@ -1,4 +1,5 @@
 const express = require('express')
+const cors = require('cors')
 const app = express()
 const port = 2024
 
@@ -9,6 +10,8 @@ app.get('/', (req, res) => {
 });
 // to read json body
 app.use(express.json());
+// to allow client to access the server local
+app.use(cors());
 
 const users = require('./routes/users')
 app.use('/users', users)

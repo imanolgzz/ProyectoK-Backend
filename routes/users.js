@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const client = require("../helpers/postgres.ts");
-const { getUsers, getUserById, createUser } = require("../controllers/users.js");
+const { getUsers, getUserByEmail, createUser } = require("../controllers/users.js");
 
 //get all users
 router.get("/", getUsers);
-//get user by id
-router.get("/:id", getUserById);
+//get user by email
+router.get("/:email", getUserByEmail);
 
 //router.get("/login/:username", loginByUsername);
 
