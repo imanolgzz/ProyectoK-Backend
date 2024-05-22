@@ -13,10 +13,15 @@ app.use(express.json());
 // to allow client to access the server local
 app.use(cors());
 
+//routes
 const users = require('./routes/users')
 app.use('/users', users)
 
 const quizes = require('./routes/quizes')
 app.use('/quizes', quizes)
+
+
+const responses = require('./routes/responses')
+app.use('/responses', responses)
 
 app.listen(port);
