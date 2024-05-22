@@ -83,7 +83,7 @@ async function getQuizes(req, res) {
         try {
             const { adminId, topicId, name, questions } = req.body;
 
-            await client.query('BEGIN');
+            await client.query('BEGIN')
 
             // Insert the quiz
             const quizResult = await client.query(
