@@ -20,7 +20,6 @@ async function getQuizes(req, res) {
 }
 
     async function getQuizById(req, res) {
-        console.log("Request params", req.params.id);
         const id = req.params.id;
 
             try {
@@ -49,7 +48,6 @@ async function getQuizes(req, res) {
                 if (result.rows.length === 0) {
                     res.status(404).json({ message: "This quiz does not exist" });
                 } else {
-                    console.log("Query result", result.rows);
 
                     // Group questions by quiz
                     const quizData = {
