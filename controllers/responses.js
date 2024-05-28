@@ -11,6 +11,8 @@ const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 async function postResponse(req, res) {
   try {
     const { quizId, userId, responses } = req.body;
+    console.log("RESPONSES",req.body);
+    console.log(quizId, userId, responses);
 
     //   Pull the quiz data
     let quizData;

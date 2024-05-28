@@ -30,20 +30,67 @@ async function getUserByEmail(req, res) {
           res.status(404).json({ message: "this user does not exist" });
         } else {
           console.log("Query result", result.rows);
-          res.status(200).json(result.rows);
+          const userId = result.rows[0].user_id;
+          // Delete any session row with the user's user_id
+          client.query(
+            "DELETE FROM sessions WHERE user_id = $1",
+            [userId],
+            (err, deleteResult) => {
+              if (err) {
+                console.log("Error deleting session", err);
+                res.status(500).json({ message: "Error deleting session" });
+              } else {
+                // Create a new session
+                client.query(
+                  "CALL insert_session($1)",
+                  [userId],
+                  (err, callResult) => {
+                    if (err) {
+                      console.log("Error calling insert_session", err);
+                      res
+                        .status(500)
+                        .json({ message: "Error calling insert_session" });
+                    } else {
+                      // Select the session
+                      client.query(
+                        "SELECT * FROM sessions WHERE user_id = $1",
+                        [userId],
+                        (err, selectResult) => {
+                          if (err) {
+                            console.log("Error selecting session", err);
+                            res
+                              .status(500)
+                              .json({ message: "Error selecting session" });
+                          } else {
+                            console.log("Session selected", selectResult.rows);
+                            res
+                              .status(200)
+                              .json({
+                                user: result.rows[0],
+                                session: selectResult.rows[0],
+                              });
+                          }
+                        }
+                      );
+                    }
+                  }
+                );
+              }
+            }
+          );
         }
       }
     }
   );
 }
 
-// create a new user NOT READY
+// create a new user
 async function createUser(req, res) {
   try {
     const { username, email, firstName, lastName, isAdmin } = req.body;
     console.log("Request body", req.body);
     client.query(
-      "INSERT INTO users (user_name, user_email, first_name, last_name, is_admin) VALUES ($1, $2, $3, $4, $5)",
+      "INSERT INTO users (user_name, user_email, first_name, last_name, is_admin) VALUES ($1, $2, $3, $4, $5) RETURNING user_id",
       [username, email, firstName, lastName, isAdmin],
       (err, result) => {
         if (err) {
@@ -51,7 +98,26 @@ async function createUser(req, res) {
           res.status(500).json({ message: "Error executing query" });
         } else {
           console.log("Query result", result.rows);
-          res.status(200).json({ message: "User created successfully" });
+          const userId = result.rows[0].user_id;
+          client.query(
+            "SELECT * FROM sessions WHERE user_id = $1",
+            [userId],
+            (err, sessionResult) => {
+              if (err) {
+                console.log("Error executing session query", err);
+                res
+                  .status(500)
+                  .json({ message: "Error executing session query" });
+              } else {
+                console.log("Session query result", sessionResult.rows);
+                res.status(200).json({
+                  message: "User created successfully",
+                  user: result.rows[0],
+                  session: sessionResult.rows[0],
+                });
+              }
+            }
+          );
         }
       }
     );
