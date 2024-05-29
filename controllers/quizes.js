@@ -1,6 +1,4 @@
-const express = require("express");
-const router = express.Router();
-const client = require("../helpers/postgres.ts");
+import client from '../helpers/postgres.js';
 
 // this file is to have the controlers for each route
 
@@ -128,7 +126,4 @@ async function getQuizes(req, res) {
 
 
 
-exports.getQuizes = getQuizes;
-exports.getQuizById = getQuizById;
-exports.createQuiz = createQuiz;
-exports.getTopics = getTopics;
+export { getQuizes, getQuizById, createQuiz, getTopics };
