@@ -110,8 +110,25 @@ async function getQuizes(req, res) {
         }
     }
 
+    async function getTopics(req, res) {
+        console.log("Getting topics");
+        client.query(
+            "SELECT * FROM topics",
+            (err, result) => {
+                if (err) {
+                    console.log("Error executing query", err);
+                    res.status(500).json({ message: "Error executing query" });
+                } else {
+                    console.log("Query result", result.rows);
+                    res.status(200).json(result.rows);
+                }
+            }
+        );
+    }
+
 
 
 exports.getQuizes = getQuizes;
 exports.getQuizById = getQuizById;
 exports.createQuiz = createQuiz;
+exports.getTopics = getTopics;

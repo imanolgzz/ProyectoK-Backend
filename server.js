@@ -1,7 +1,7 @@
 const express = require('express')
 const cors = require('cors')
 const app = express()
-const port = 2024
+const port = 2025
 
 // to read json body
 app.use(express.json());
