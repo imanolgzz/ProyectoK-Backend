@@ -10,7 +10,10 @@ const config = {
     host: process.env.POSTGRES_HOST,
     port: process.env.POSTGRES_PORT,
     database: process.env.POSTGRES_DB,
-    ssl: false
+    ssl: {
+      rejectUnauthorized: true,
+      ca: process.env.POSTGRES_CA,
+    },
 };
 
 const client = new Client(config);
