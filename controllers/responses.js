@@ -9,6 +9,7 @@ const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 // this file is to have the controlers for each route
 
 async function postResponse(req, res) {
+  console.log("START POST RESPONSE");
   try {
     const { quizId, userId, responses } = req.body;
     console.log("RESPONSES",req.body);
@@ -148,7 +149,10 @@ console.log("DATA",processedData);
     const reportId = answerReportResult.rows[0].report_id;
 
     // Insert the responses
+    console.log("RESPONSES",responses);
     for (const response of responses) {
+
+      console.log(response);
       await client.query(
         "INSERT INTO responses (report_id, answer, question_id, confidence, quiz_id) VALUES ($1, $2, $3, $4, $5)",
         [
@@ -189,11 +193,12 @@ async function sendToGemini(prompt) {
   // Return a JSON object
   return text;
 }
-
 async function getResponse(req, res) {
   try {
     const reportId = req.params.id;
     console.log(reportId);
+
+    // Fetch the answer report
     const reportResult = await client.query(
       "SELECT * FROM answer_reports WHERE report_id = $1",
       [reportId]
@@ -207,8 +212,23 @@ async function getResponse(req, res) {
 
     const report = reportResult.rows[0];
 
+    // Fetch the responses and their corresponding questions
     const responsesResult = await client.query(
-      "SELECT * FROM responses WHERE report_id = $1",
+      `SELECT
+          r.*,
+          q.question,
+          q.question_ans1,
+          q.question_ans2,
+          q.question_ans3,
+          q.question_ans4,
+          q.correct_answer,
+          q.active
+       FROM
+          responses r
+       INNER JOIN
+          questions q ON r.question_id = q.question_id
+       WHERE
+          r.report_id = $1`,
       [reportId]
     );
     console.log(responsesResult.rows);
@@ -222,6 +242,7 @@ async function getResponse(req, res) {
   }
 }
 
+
 async function getResponseByUser(req, res) {
   const id = req.params.id;
   console.log("Getting responses for user ID", id);
@@ -233,14 +254,20 @@ async function getResponseByUser(req, res) {
               ar.quiz_id,
               q.quiz_name,
               ar.user_id,
-              u.user_name,
-              ar.created_at
+              u.user_name AS user_name,
+              ar.created_at,
+              a.user_name AS author_name,
+              t.topic_name
            FROM
               answer_reports ar
            INNER JOIN
               quiz q ON ar.quiz_id = q.quiz_id
            INNER JOIN
               users u ON ar.user_id = u.user_id
+           INNER JOIN
+              users a ON q.admin_id = a.user_id
+           INNER JOIN
+              topics t ON q.topic_id = t.topic_id
            WHERE
               ar.user_id = $1`,
           [id]
@@ -252,6 +279,7 @@ async function getResponseByUser(req, res) {
       res.status(500).json({ error: "An error occurred while fetching responses" });
   }
 }
+
 
 
 exports.postResponse = postResponse;
