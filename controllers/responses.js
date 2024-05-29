@@ -1,7 +1,5 @@
-const express = require("express");
-const router = express.Router();
-const client = require("../helpers/postgres.ts");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+import client from '../helpers/postgres.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Access your API key as an environment variable (see "Set up your API key" above)
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
@@ -280,8 +278,4 @@ async function getResponseByUser(req, res) {
   }
 }
 
-
-
-exports.postResponse = postResponse;
-exports.getResponse = getResponse;
-exports.getResponseByUser = getResponseByUser;
+export { postResponse, getResponse, getResponseByUser };

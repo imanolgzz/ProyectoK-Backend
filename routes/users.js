@@ -1,8 +1,6 @@
-const express = require("express");
+import express from 'express';
 const router = express.Router();
-const client = require("../helpers/postgres.ts");
-const { getUsers, getUserByEmail, createUser } = require("../controllers/users.js");
-
+import { getUsers, getUserByEmail, createUser } from '../controllers/users.js';
 //get all users
 router.get("/", getUsers);
 //get user by email
@@ -15,4 +13,4 @@ router.post("/", createUser);
 
 
 
-module.exports = router;
+export default router;

@@ -1,5 +1,4 @@
-const express = require("express");
-const client = require("../helpers/postgres.ts");
+import client from '../helpers/postgres.js';
 
 // this file is to have the controlers for each route
 
@@ -127,6 +126,4 @@ async function createUser(req, res) {
   }
 }
 
-exports.getUsers = getUsers;
-exports.getUserByEmail = getUserByEmail;
-exports.createUser = createUser;
+export { getUsers, getUserByEmail, createUser };

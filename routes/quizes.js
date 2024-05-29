@@ -1,11 +1,12 @@
-const express = require("express");
-const router = express.Router();
-const client = require("../helpers/postgres.ts");
-const { getQuizes, getQuizById, getTopics, createQuiz} = require("../controllers/quizes.js");
-//get all quizes
-router.get("/", getQuizes);
-router.get("/topics", getTopics);
-router.get("/:id", getQuizById);
-router.post("/", createQuiz);
+import express from 'express';
+import { getQuizes, getQuizById, getTopics, createQuiz } from '../controllers/quizes.js';
 
-module.exports = router;
+const router = express.Router();
+
+// Get all quizzes
+router.get('/', getQuizes);
+router.get('/topics', getTopics);
+router.get('/:id', getQuizById);
+router.post('/', createQuiz);
+
+export default router;
