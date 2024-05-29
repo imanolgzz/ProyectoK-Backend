@@ -12,7 +12,7 @@ const config = {
     database: process.env.POSTGRES_DB,
     ssl: {
       rejectUnauthorized: true,
-      ca: process.env.POSTGRES_CA,
+      ca: process.env.POSTGRES_CA
     },
 };
 
