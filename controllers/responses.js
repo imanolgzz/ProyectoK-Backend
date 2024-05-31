@@ -278,4 +278,44 @@ async function getResponseByUser(req, res) {
   }
 }
 
-export { postResponse, getResponse, getResponseByUser };
+
+async function getResponseByQuiz(req, res) {
+  const id = req.params.id;
+  console.log("Getting responses for quiz ID", id);
+
+  try {
+      const response = await client.query(
+          `SELECT
+              ar.report_id,
+              ar.quiz_id,
+              q.quiz_name,
+              ar.user_id,
+              u.user_name AS user_name,
+              ar.created_at,
+              a.user_name AS author_name,
+              t.topic_name
+           FROM
+              answer_reports ar
+           INNER JOIN
+              quiz q ON ar.quiz_id = q.quiz_id
+           INNER JOIN
+              users u ON ar.user_id = u.user_id
+           INNER JOIN
+              users a ON q.admin_id = a.user_id
+           INNER JOIN
+              topics t ON q.topic_id = t.topic_id
+           WHERE
+              ar.quiz_id = $1`,
+          [id]
+      );
+
+      res.status(200).json(response.rows);
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "An error occurred while fetching responses" });
+  }
+}
+
+
+
+export { postResponse, getResponse, getResponseByUser,getResponseByQuiz };
