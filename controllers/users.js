@@ -83,35 +83,46 @@ async function getUserByEmail(req, res) {
   );
 }
 
-// create a new user
 async function createUser(req, res) {
   try {
     const { username, email, firstName, lastName, isAdmin } = req.body;
     console.log("Request body", req.body);
     client.query(
       "INSERT INTO users (user_name, user_email, first_name, last_name, is_admin) VALUES ($1, $2, $3, $4, $5) RETURNING user_id",
-      [username, email, firstName, lastName, isAdmin],
-      (err, result) => {
+[username, email, firstName, lastName, isAdmin],
+(err, result) => {
+  if (err) {
+    console.log("Error executing query", err);
+    res.status(500).json({ message: "Error executing query" });
+  } else {
+    console.log("Query result", result.rows);
+    const userId = result.rows[0].user_id;
+    console.log("User ID", userId);
+    client.query(
+      "SELECT * FROM sessions WHERE user_id = $1",
+      [userId],
+      (err, sessionResult) => {
         if (err) {
-          console.log("Error executing query", err);
-          res.status(500).json({ message: "Error executing query" });
+          console.log("Error executing session query", err);
+          res.status(500).json({ message: "Error executing session query" });
         } else {
-          console.log("Query result", result.rows);
-          const userId = result.rows[0].user_id;
+          console.log("Session query result", sessionResult.rows);
+          if (sessionResult.rows.length === 0) {
+            console.log("No session found for user");
+          }
+          // Query to select the user by their ID
           client.query(
-            "SELECT * FROM sessions WHERE user_id = $1",
+            "SELECT * FROM users WHERE user_id = $1",
             [userId],
-            (err, sessionResult) => {
+            (err, userResult) => {
               if (err) {
-                console.log("Error executing session query", err);
-                res
-                  .status(500)
-                  .json({ message: "Error executing session query" });
+                console.log("Error executing user query", err);
+                res.status(500).json({ message: "Error executing user query" });
               } else {
-                console.log("Session query result", sessionResult.rows);
+                console.log("User query result", userResult.rows);
                 res.status(200).json({
                   message: "User created successfully",
-                  user: result.rows[0],
+                  user: userResult.rows[0], // Return the user from the user query
                   session: sessionResult.rows[0],
                 });
               }
@@ -120,6 +131,8 @@ async function createUser(req, res) {
         }
       }
     );
+  }
+});
   } catch (err) {
     console.log("Error creating user", err);
     res.status(500).json({ message: "Error creating user" });
