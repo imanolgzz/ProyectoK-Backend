@@ -4,7 +4,7 @@ import { getQuizes, getQuizById, getTopics, createQuiz } from '../controllers/qu
 const router = express.Router();
 
 // Get all quizzes
-router.get('/', getQuizes);
+router.get('/:sessionKey', getQuizes);
 router.get('/topics', getTopics);
 router.get('/:id', getQuizById);
 router.post('/', createQuiz);
