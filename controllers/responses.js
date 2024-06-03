@@ -284,37 +284,152 @@ async function getResponseByQuiz(req, res) {
   console.log("Getting responses for quiz ID", id);
 
   try {
-      const response = await client.query(
-          `SELECT
-              ar.report_id,
-              ar.quiz_id,
-              q.quiz_name,
-              ar.user_id,
-              u.user_name AS user_name,
-              ar.created_at,
-              a.user_name AS author_name,
-              t.topic_name
-           FROM
-              answer_reports ar
-           INNER JOIN
-              quiz q ON ar.quiz_id = q.quiz_id
-           INNER JOIN
-              users u ON ar.user_id = u.user_id
-           INNER JOIN
-              users a ON q.admin_id = a.user_id
-           INNER JOIN
-              topics t ON q.topic_id = t.topic_id
-           WHERE
-              ar.quiz_id = $1`,
-          [id]
-      );
+    // Fetch quiz information and questions
+    const quizResult = await client.query(
+      `SELECT
+          q.quiz_id,
+          q.quiz_name,
+          q.admin_id,
+          a.user_name AS author_name,
+          q.topic_id,
+          t.topic_name,
+          qu.question_id,
+          qu.question AS question_text,
+          qu.question_ans1,
+          qu.question_ans2,
+          qu.question_ans3,
+          qu.question_ans4,
+          qu.correct_answer
+       FROM
+          quiz q
+       INNER JOIN
+          users a ON q.admin_id = a.user_id
+       INNER JOIN
+          topics t ON q.topic_id = t.topic_id
+       LEFT JOIN
+          questions qu ON q.quiz_id = qu.quiz_id
+       WHERE
+          q.quiz_id = $1`,
+      [id]
+    );
 
-      res.status(200).json(response.rows);
+    if (quizResult.rows.length === 0) {
+      return res.status(404).json({ error: "Quiz not found" });
+    }
+
+    const quizData = {
+      quiz_id: quizResult.rows[0].quiz_id,
+      quiz_name: quizResult.rows[0].quiz_name,
+      admin_id: quizResult.rows[0].admin_id,
+      author_name: quizResult.rows[0].author_name,
+      topic_id: quizResult.rows[0].topic_id,
+      topic_name: quizResult.rows[0].topic_name,
+      questions: quizResult.rows.map(row => ({
+        question_id: row.question_id,
+        question_text: row.question_text,
+        question_ans1: row.question_ans1,
+        question_ans2: row.question_ans2,
+        question_ans3: row.question_ans3,
+        question_ans4: row.question_ans4,
+        correct_answer: row.correct_answer
+      })).filter(q => q.question_id !== null),
+      QuizStats: {
+        average_score: 0,
+        average_confidence: 0,
+        averagePreformance: 0
+      }
+    };
+
+    // Fetch reports and their responses
+    const responseResult = await client.query(
+      `SELECT
+          ar.report_id,
+          ar.quiz_id,
+          ar.user_id,
+          u.user_name AS user_name,
+          ar.created_at,
+          r.response_id,
+          r.question_id,
+          q_info.question AS question_text,
+          r.answer AS user_answer,
+          r.confidence AS user_confidence,
+          ar.score AS user_score
+       FROM
+          answer_reports ar
+       INNER JOIN
+          users u ON ar.user_id = u.user_id
+       INNER JOIN
+          responses r ON ar.report_id = r.report_id
+       INNER JOIN
+          questions q_info ON r.question_id = q_info.question_id
+       WHERE
+          ar.quiz_id = $1 AND r.question_id IN (SELECT question_id FROM questions WHERE quiz_id = $1)`,
+      [id]
+    );
+
+    const reportsMap = new Map();
+    let totalScore = 0;
+    let totalConfidence = 0;
+    let totalReports = 0;
+
+    responseResult.rows.forEach(row => {
+      if (!reportsMap.has(row.report_id)) {
+        reportsMap.set(row.report_id, {
+          report_id: row.report_id,
+          quiz_id: row.quiz_id,
+          user_id: row.user_id,
+          user_name: row.user_name,
+          created_at: row.created_at,
+          user_score: row.user_score,
+          responses: []
+        });
+        totalScore += row.user_score;
+        totalReports++;
+      }
+
+      reportsMap.get(row.report_id).responses.push({
+        response_id: row.response_id,
+        question_id: row.question_id,
+        question_text: row.question_text,
+        user_answer: row.user_answer,
+        user_confidence: row.user_confidence
+      });
+
+      totalConfidence += row.user_confidence;
+    });
+
+    const reports = Array.from(reportsMap.values());
+
+
+    // Calculate averages
+    const quizLenght = quizData.questions.length;
+
+    const numResponses = responseResult.rows.length/quizLenght;
+    const averageScore = responseResult.rows.length ? Math.round((100/quizLenght) * (totalScore / numResponses)): 0;
+    const averageConfidence = responseResult.rows.length ? Math.round((totalConfidence / responseResult.rows.length)*10) : 0;
+    const averagePreformance = responseResult.rows.length ? Math.round((averageConfidence+averageScore)/2) : 0;
+
+
+    // Update quiz stats
+    quizData.QuizStats.average_score = averageScore;
+    quizData.QuizStats.average_confidence = averageConfidence;
+    quizData.QuizStats.averagePreformance = averagePreformance;
+
+    // Combine quiz data and reports
+    const result = {
+      QuizData: quizData,
+      QuizSubmissions: reports
+    };
+
+    res.status(200).json(result);
   } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "An error occurred while fetching responses" });
+    console.error(err);
+    res.status(500).json({ error: "An error occurred while fetching responses" });
   }
 }
+
+
+
 
 
 
