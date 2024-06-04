@@ -206,4 +206,40 @@ async function getTopics(req, res) {
   });
 }
 
-export { getQuizes, getQuizById, createQuiz, getTopics };
+async function updateQuiz(req,res){
+  console.log("Updating Quiz")
+  const sessionKey = req.headers.sessionkey;
+  console.log("Session key", req.headers);
+  console.log("Session key", sessionKey);
+
+  const sessionResult = await client.query(
+    "SELECT * FROM sessions WHERE session_key = $1",
+    [sessionKey]
+  );
+
+  if (sessionResult.rows.length > 0) {
+    const session = sessionResult.rows[0];
+    const createdAt = new Date(session.created_at);
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+    if (createdAt >= twoHoursAgo) {
+      // The session was created less than 2 hours ago
+      // continue with the request
+    } else {
+      // The session was created more than 2 hours ago
+      return res.status(401).json({ message: "Session expired" });
+    }
+  } else {
+    // No session found
+    return res.status(401).json({ message: "Invalid session key" });
+  }
+
+  console.log("BODY", req.body);
+
+  return res.status(200).json({ message: "Quiz updated successfully" });
+
+
+
+}
+
+export { getQuizes, getQuizById, createQuiz, getTopics,updateQuiz };

@@ -359,8 +359,8 @@ async function getResponseByQuiz(req, res) {
   console.log("Getting responses for quiz ID", id);
 
   const sessionKey = req.headers.sessionkey;
-   // check if the session key is valid
-   const sessionResult = await client.query(
+  // Check if the session key is valid
+  const sessionResult = await client.query(
     "SELECT * FROM sessions WHERE session_key = $1",
     [sessionKey]
   );
@@ -372,7 +372,7 @@ async function getResponseByQuiz(req, res) {
 
     if (createdAt >= twoHoursAgo) {
       // The session was created less than 2 hours ago
-      // continue with the request
+      // Continue with the request
     } else {
       // The session was created more than 2 hours ago
       return res.status(401).json({ message: "Session expired" });
@@ -435,7 +435,7 @@ async function getResponseByQuiz(req, res) {
       QuizStats: {
         average_score: 0,
         average_confidence: 0,
-        averagePreformance: 0
+        averagePerformance: 0
       }
     };
 
@@ -452,7 +452,8 @@ async function getResponseByQuiz(req, res) {
           q_info.question AS question_text,
           r.answer AS user_answer,
           r.confidence AS user_confidence,
-          ar.score AS user_score
+          ar.score AS user_score,
+          ar.analysis AS report_analysis
        FROM
           answer_reports ar
        INNER JOIN
@@ -480,6 +481,7 @@ async function getResponseByQuiz(req, res) {
           user_name: row.user_name,
           created_at: row.created_at,
           user_score: row.user_score,
+          report_analysis: row.report_analysis,
           responses: []
         });
         totalScore += row.user_score;
@@ -499,18 +501,17 @@ async function getResponseByQuiz(req, res) {
 
     const reports = Array.from(reportsMap.values());
     // Calculate averages
-    const quizLenght = quizData.questions.length;
+    const quizLength = quizData.questions.length;
 
-    const numResponses = responseResult.rows.length/quizLenght;
-    const averageScore = responseResult.rows.length ? Math.round((100/quizLenght) * (totalScore / numResponses)): 0;
-    const averageConfidence = responseResult.rows.length ? Math.round((totalConfidence / responseResult.rows.length)*10) : 0;
-    const averagePreformance = responseResult.rows.length ? Math.round((averageConfidence+averageScore)/2) : 0;
-
+    const numResponses = responseResult.rows.length / quizLength;
+    const averageScore = responseResult.rows.length ? Math.round((100 / quizLength) * (totalScore / numResponses)) : 0;
+    const averageConfidence = responseResult.rows.length ? Math.round((totalConfidence / responseResult.rows.length) * 10) : 0;
+    const averagePerformance = responseResult.rows.length ? Math.round((averageConfidence + averageScore) / 2) : 0;
 
     // Update quiz stats
     quizData.QuizStats.average_score = averageScore;
     quizData.QuizStats.average_confidence = averageConfidence;
-    quizData.QuizStats.averagePreformance = averagePreformance;
+    quizData.QuizStats.averagePerformance = averagePerformance;
 
     // Combine quiz data and reports
     const result = {
@@ -524,8 +525,6 @@ async function getResponseByQuiz(req, res) {
     res.status(500).json({ error: "An error occurred while fetching responses" });
   }
 }
-
-
 
 
 
