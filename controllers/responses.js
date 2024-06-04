@@ -218,7 +218,7 @@ async function sendToGemini(prompt) {
 }
 
 async function getResponse(req, res) {
-  const sessionKey= req.body.sessionKey;
+  const sessionKey= req.headers.sessionkey;
   console.log("Session key", sessionKey);
    // check if the session key is valid
    const sessionResult = await client.query(
