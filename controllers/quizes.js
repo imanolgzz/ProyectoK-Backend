@@ -20,7 +20,7 @@ async function getQuizes(req, res) {
       // continue with the request
     } else {
       // The session was created more than 2 hours ago
-        return res.status(401).json({ message: "Session expired" });
+      return res.status(401).json({ message: "Session expired" });
     }
   } else {
     // No session found
@@ -42,8 +42,33 @@ async function getQuizes(req, res) {
 }
 
 async function getQuizById(req, res) {
-  const id = req.params.id;
+  console.log("Getting quiz by id");
+  const sessionKey = req.headers.sessionkey;
 
+  // check if the session key is valid
+  const sessionResult = await client.query(
+    "SELECT * FROM sessions WHERE session_key = $1",
+    [sessionKey]
+  );
+
+  if (sessionResult.rows.length > 0) {
+    const session = sessionResult.rows[0];
+    const createdAt = new Date(session.created_at);
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+    if (createdAt >= twoHoursAgo) {
+      // The session was created less than 2 hours ago
+      // continue with the request
+    } else {
+      // The session was created more than 2 hours ago
+      return res.status(401).json({ message: "Session expired" });
+    }
+  } else {
+    // No session found
+    return res.status(401).json({ message: "Invalid session key" });
+  }
+
+  const id = req.params.id;
   try {
     const result = await client.query(
       `SELECT
@@ -100,6 +125,31 @@ async function getQuizById(req, res) {
 }
 
 async function createQuiz(req, res) {
+    const sessionKey = req.params.sessionKey;
+    console.log("Session key", sessionKey);
+    // check if the session key is valid
+    const sessionResult = await client.query(
+        "SELECT * FROM sessions WHERE session_key = $1",
+        [sessionKey]
+      );
+
+      if (sessionResult.rows.length > 0) {
+        const session = sessionResult.rows[0];
+        const createdAt = new Date(session.created_at);
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+        if (createdAt >= twoHoursAgo) {
+          // The session was created less than 2 hours ago
+          // continue with the request
+        } else {
+          // The session was created more than 2 hours ago
+          return res.status(401).json({ message: "Session expired" });
+        }
+      } else {
+        // No session found
+        return res.status(401).json({ message: "Invalid session key" });
+      }
+
   try {
     const { adminId, topicId, name, questions } = req.body;
 

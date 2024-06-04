@@ -6,7 +6,7 @@ const router = express.Router();
 // Get all quizzes
 router.get('/:sessionKey', getQuizes);
 router.get('/topics', getTopics);
-router.get('/:id', getQuizById);
-router.post('/', createQuiz);
+router.get('/quizId/:id', getQuizById);
+router.post('/:sessionKey', createQuiz);
 
 export default router;

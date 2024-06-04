@@ -7,6 +7,31 @@ const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 // this file is to have the controlers for each route
 
 async function postResponse(req, res) {
+  const sessionKey = req.params.sessionKey;
+  console.log("Session key", sessionKey);
+  // check if the session key is valid
+  const sessionResult = await client.query(
+    "SELECT * FROM sessions WHERE session_key = $1",
+    [sessionKey]
+  );
+
+  if (sessionResult.rows.length > 0) {
+    const session = sessionResult.rows[0];
+    const createdAt = new Date(session.created_at);
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+    if (createdAt >= twoHoursAgo) {
+      // The session was created less than 2 hours ago
+      // continue with the request
+    } else {
+      // The session was created more than 2 hours ago
+      return res.status(401).json({ message: "Session expired" });
+    }
+  } else {
+    // No session found
+    return res.status(401).json({ message: "Invalid session key" });
+  }
+
   console.log("START POST RESPONSE");
   try {
     const { quizId, userId, responses } = req.body;
@@ -191,7 +216,33 @@ async function sendToGemini(prompt) {
   // Return a JSON object
   return text;
 }
+
 async function getResponse(req, res) {
+  const sessionKey= req.body.sessionKey;
+  console.log("Session key", sessionKey);
+   // check if the session key is valid
+   const sessionResult = await client.query(
+    "SELECT * FROM sessions WHERE session_key = $1",
+    [sessionKey]
+  );
+
+  if (sessionResult.rows.length > 0) {
+    const session = sessionResult.rows[0];
+    const createdAt = new Date(session.created_at);
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+    if (createdAt >= twoHoursAgo) {
+      // The session was created less than 2 hours ago
+      // continue with the request
+    } else {
+      // The session was created more than 2 hours ago
+      return res.status(401).json({ message: "Session expired" });
+    }
+  } else {
+    // No session found
+    return res.status(401).json({ message: "Invalid session key" });
+  }
+
   try {
     const reportId = req.params.id;
     console.log(reportId);
@@ -243,7 +294,31 @@ async function getResponse(req, res) {
 
 async function getResponseByUser(req, res) {
   const id = req.params.id;
+const sessionKey = req.headers.sessionkey;
+  console.log("Session key", sessionKey);
   console.log("Getting responses for user ID", id);
+   // check if the session key is valid
+   const sessionResult = await client.query(
+    "SELECT * FROM sessions WHERE session_key = $1",
+    [sessionKey]
+  );
+
+  if (sessionResult.rows.length > 0) {
+    const session = sessionResult.rows[0];
+    const createdAt = new Date(session.created_at);
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+    if (createdAt >= twoHoursAgo) {
+      // The session was created less than 2 hours ago
+      // continue with the request
+    } else {
+      // The session was created more than 2 hours ago
+      return res.status(401).json({ message: "Session expired" });
+    }
+  } else {
+    // No session found
+    return res.status(401).json({ message: "Invalid session key" });
+  }
 
   try {
       const response = await client.query(
@@ -282,6 +357,30 @@ async function getResponseByUser(req, res) {
 async function getResponseByQuiz(req, res) {
   const id = req.params.id;
   console.log("Getting responses for quiz ID", id);
+
+  const sessionKey = req.body.sessionKey;
+   // check if the session key is valid
+   const sessionResult = await client.query(
+    "SELECT * FROM sessions WHERE session_key = $1",
+    [sessionKey]
+  );
+
+  if (sessionResult.rows.length > 0) {
+    const session = sessionResult.rows[0];
+    const createdAt = new Date(session.created_at);
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+    if (createdAt >= twoHoursAgo) {
+      // The session was created less than 2 hours ago
+      // continue with the request
+    } else {
+      // The session was created more than 2 hours ago
+      return res.status(401).json({ message: "Session expired" });
+    }
+  } else {
+    // No session found
+    return res.status(401).json({ message: "Invalid session key" });
+  }
 
   try {
     // Fetch quiz information and questions
@@ -399,8 +498,6 @@ async function getResponseByQuiz(req, res) {
     });
 
     const reports = Array.from(reportsMap.values());
-
-
     // Calculate averages
     const quizLenght = quizData.questions.length;
 
