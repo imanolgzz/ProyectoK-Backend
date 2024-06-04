@@ -358,7 +358,7 @@ async function getResponseByQuiz(req, res) {
   const id = req.params.id;
   console.log("Getting responses for quiz ID", id);
 
-  const sessionKey = req.body.sessionKey;
+  const sessionKey = req.headers.sessionkey;
    // check if the session key is valid
    const sessionResult = await client.query(
     "SELECT * FROM sessions WHERE session_key = $1",
