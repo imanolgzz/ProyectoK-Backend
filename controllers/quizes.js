@@ -206,40 +206,91 @@ async function getTopics(req, res) {
   });
 }
 
-async function updateQuiz(req,res){
-  console.log("Updating Quiz")
+async function updateQuiz(req, res) {
+  console.log("Updating Quiz");
   const sessionKey = req.headers.sessionkey;
-  console.log("Session key", req.headers);
   console.log("Session key", sessionKey);
 
-  const sessionResult = await client.query(
-    "SELECT * FROM sessions WHERE session_key = $1",
-    [sessionKey]
-  );
+  try {
+    // Check if session is valid
+    const sessionResult = await client.query(
+      "SELECT * FROM sessions WHERE session_key = $1",
+      [sessionKey]
+    );
 
-  if (sessionResult.rows.length > 0) {
-    const session = sessionResult.rows[0];
-    const createdAt = new Date(session.created_at);
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    if (sessionResult.rows.length > 0) {
+      const session = sessionResult.rows[0];
+      const createdAt = new Date(session.created_at);
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
 
-    if (createdAt >= twoHoursAgo) {
-      // The session was created less than 2 hours ago
-      // continue with the request
+      if (createdAt >= twoHoursAgo) {
+        // The session was created less than 2 hours ago
+
+        // Extract data from request body
+        const { quiz_id, admin_id, topic_id, quiz_name, questions } = req.body;
+
+        // Update quiz data
+        await client.query("CALL update_quiz($1, $2, $3, $4)", [
+          quiz_id,
+          admin_id,
+          topic_id,
+          quiz_name
+        ]);
+
+        // Fetch current questions associated with the quiz
+        const currentQuestionsResult = await client.query(
+          "SELECT * FROM questions WHERE quiz_id = $1",
+          [quiz_id]
+        );
+
+        const currentQuestions = currentQuestionsResult.rows;
+
+        // Determine new questions
+        const newQuestions = questions.filter((newQuestion) => {
+          return !currentQuestions.some((existingQuestion) => {
+            return (
+              newQuestion.question === existingQuestion.question &&
+              JSON.stringify(newQuestion.options.sort()) ===
+                JSON.stringify([
+                  existingQuestion.question_ans1,
+                  existingQuestion.question_ans2,
+                  existingQuestion.question_ans3,
+                  existingQuestion.question_ans4,
+                ].sort())
+            );
+          });
+        });
+
+        // Insert new questions
+        for (const newQuestion of newQuestions) {
+          await client.query("CALL insert_question2($1, $2, $3, $4, $5, $6, $7, $8)", [
+            quiz_id,
+            newQuestion.question,
+            newQuestion.options[0],
+            newQuestion.options[1],
+            newQuestion.options[2],
+            newQuestion.options[3],
+            newQuestion.correct_answer,
+            newQuestion.active,
+          ]);
+        }
+
+        return res.status(200).json({ message: "Quiz updated successfully" });
+      } else {
+        // The session was created more than 2 hours ago
+        return res.status(401).json({ message: "Session expired" });
+      }
     } else {
-      // The session was created more than 2 hours ago
-      return res.status(401).json({ message: "Session expired" });
+      // No session found
+      return res.status(401).json({ message: "Invalid session key" });
     }
-  } else {
-    // No session found
-    return res.status(401).json({ message: "Invalid session key" });
+  } catch (error) {
+    console.error("Error updating quiz:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-
-  console.log("BODY", req.body);
-
-  return res.status(200).json({ message: "Quiz updated successfully" });
-
-
-
 }
+
+
+
 
 export { getQuizes, getQuizById, createQuiz, getTopics,updateQuiz };
