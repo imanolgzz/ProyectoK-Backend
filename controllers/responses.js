@@ -1,5 +1,5 @@
-import client from '../helpers/postgres.js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import client from "../helpers/postgres.js";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Access your API key as an environment variable (see "Set up your API key" above)
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
@@ -35,7 +35,7 @@ async function postResponse(req, res) {
   console.log("START POST RESPONSE");
   try {
     const { quizId, userId, responses } = req.body;
-    console.log("RESPONSES",req.body);
+    console.log("RESPONSES", req.body);
     console.log(quizId, userId, responses);
 
     //   Pull the quiz data
@@ -67,54 +67,56 @@ async function postResponse(req, res) {
       res.status(500).json({ message: "Error getting quiz data" });
     }
 
-   // Extract quiz data from the first row
+    // Extract quiz data from the first row
 
-const quizData2 = {
-  quiz_id: quizData.rows[0].quiz_id,
-  admin_id: quizData.rows[0].admin_id,
-  topic_id: quizData.rows[0].topic_id,
-  quiz_name: quizData.rows[0].quiz_name,
-  topic_name: quizData.rows[0].topic_name,
-};
+    const quizData2 = {
+      quiz_id: quizData.rows[0].quiz_id,
+      admin_id: quizData.rows[0].admin_id,
+      topic_id: quizData.rows[0].topic_id,
+      quiz_name: quizData.rows[0].quiz_name,
+      topic_name: quizData.rows[0].topic_name,
+    };
 
-function findResponse(questionId, type) {
-  let ans= responses.find(response => response.questionId === questionId);
-  if (!ans) {
-    console.log(`No response found for questionId ${questionId}`);
-    return null;
-  }
-  if(type === "confidence"){
-    return ans.confidence;
-  }if(type === "answer"){
-    return ans.answer;
-  }
+    function findResponse(questionId, type) {
+      let ans = responses.find(
+        (response) => response.questionId === questionId
+      );
+      if (!ans) {
+        console.log(`No response found for questionId ${questionId}`);
+        return null;
+      }
+      if (type === "confidence") {
+        return ans.confidence;
+      }
+      if (type === "answer") {
+        return ans.answer;
+      }
 
-  return ans;
-}
-// Extract question data and user responses
-const questions = quizData.rows.map(row => {
-  // Find the user's response for this question
-  console.log("question_id",row.question_id);
-  let answer = findResponse(row.question_id, "answer");
-  let confidence = findResponse(row.question_id, "confidence");
+      return ans;
+    }
+    // Extract question data and user responses
+    const questions = quizData.rows.map((row) => {
+      // Find the user's response for this question
+      console.log("question_id", row.question_id);
+      let answer = findResponse(row.question_id, "answer");
+      let confidence = findResponse(row.question_id, "confidence");
 
+      return {
+        question_id: row.question_id,
+        question: row.question,
+        question_ans1: row.question_ans1,
+        question_ans2: row.question_ans2,
+        question_ans3: row.question_ans3,
+        question_ans4: row.question_ans4,
+        correct_answer: row.correct_answer,
+        active: row.active,
+        // Add user response here
+        user_response: answer,
+        user_confidence: confidence,
+      };
+    });
 
-  return {
-    question_id: row.question_id,
-    question: row.question,
-    question_ans1: row.question_ans1,
-    question_ans2: row.question_ans2,
-    question_ans3: row.question_ans3,
-    question_ans4: row.question_ans4,
-    correct_answer: row.correct_answer,
-    active: row.active,
-    // Add user response here
-    user_response: answer,
-    user_confidence: confidence,
-  };
-});
-
-let score = 0;
+    let score = 0;
     const totalQuestions = responses.length; // Assuming responses array has all the questions
 
     for (const response of responses) {
@@ -139,18 +141,14 @@ let score = 0;
 
     console.log(scoreString); // Prints the score as a percentage
 
-// Combine quiz data and questions
-const processedData = {
-  ...quizData2,
-  questions,
-  scoreString,
-};
+    // Combine quiz data and questions
+    const processedData = {
+      ...quizData2,
+      questions,
+      scoreString,
+    };
 
-console.log("DATA",processedData);
-
-
-
-
+    console.log("DATA", processedData);
 
     // Convert the object to a JSON string
     const jsonString = JSON.stringify(processedData);
@@ -172,9 +170,8 @@ console.log("DATA",processedData);
     const reportId = answerReportResult.rows[0].report_id;
 
     // Insert the responses
-    console.log("RESPONSES",responses);
+    console.log("RESPONSES", responses);
     for (const response of responses) {
-
       console.log(response);
       await client.query(
         "INSERT INTO responses (report_id, answer, question_id, confidence, quiz_id) VALUES ($1, $2, $3, $4, $5)",
@@ -218,10 +215,10 @@ async function sendToGemini(prompt) {
 }
 
 async function getResponse(req, res) {
-  const sessionKey= req.headers.sessionkey;
+  const sessionKey = req.headers.sessionkey;
   console.log("Session key", sessionKey);
-   // check if the session key is valid
-   const sessionResult = await client.query(
+  // check if the session key is valid
+  const sessionResult = await client.query(
     "SELECT * FROM sessions WHERE session_key = $1",
     [sessionKey]
   );
@@ -291,14 +288,13 @@ async function getResponse(req, res) {
   }
 }
 
-
 async function getResponseByUser(req, res) {
   const id = req.params.id;
-const sessionKey = req.headers.sessionkey;
+  const sessionKey = req.headers.sessionkey;
   console.log("Session key", sessionKey);
   console.log("Getting responses for user ID", id);
-   // check if the session key is valid
-   const sessionResult = await client.query(
+  // check if the session key is valid
+  const sessionResult = await client.query(
     "SELECT * FROM sessions WHERE session_key = $1",
     [sessionKey]
   );
@@ -321,8 +317,8 @@ const sessionKey = req.headers.sessionkey;
   }
 
   try {
-      const response = await client.query(
-          `SELECT
+    const response = await client.query(
+      `SELECT
               ar.report_id,
               ar.quiz_id,
               q.quiz_name,
@@ -343,16 +339,17 @@ const sessionKey = req.headers.sessionkey;
               topics t ON q.topic_id = t.topic_id
            WHERE
               ar.user_id = $1`,
-          [id]
-      );
+      [id]
+    );
 
-      res.status(200).json(response.rows);
+    res.status(200).json(response.rows);
   } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "An error occurred while fetching responses" });
+    console.error(err);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching responses" });
   }
 }
-
 
 async function getResponseByQuiz(req, res) {
   const id = req.params.id;
@@ -386,29 +383,30 @@ async function getResponseByQuiz(req, res) {
     // Fetch quiz information and questions
     const quizResult = await client.query(
       `SELECT
-          q.quiz_id,
-          q.quiz_name,
-          q.admin_id,
-          a.user_name AS author_name,
-          q.topic_id,
-          t.topic_name,
-          qu.question_id,
-          qu.question AS question_text,
-          qu.question_ans1,
-          qu.question_ans2,
-          qu.question_ans3,
-          qu.question_ans4,
-          qu.correct_answer
-       FROM
-          quiz q
-       INNER JOIN
-          users a ON q.admin_id = a.user_id
-       INNER JOIN
-          topics t ON q.topic_id = t.topic_id
-       LEFT JOIN
-          questions qu ON q.quiz_id = qu.quiz_id
-       WHERE
-          q.quiz_id = $1`,
+      q.quiz_id,
+      q.quiz_name,
+      q.admin_id,
+      a.user_name AS author_name,
+      q.topic_id,
+      t.topic_name,
+      qu.question_id,
+      qu.question AS question_text,
+      qu.question_ans1,
+      qu.question_ans2,
+      qu.question_ans3,
+      qu.question_ans4,
+      qu.correct_answer,
+      qu.active AS question_active
+   FROM
+      quiz q
+   INNER JOIN
+      users a ON q.admin_id = a.user_id
+   INNER JOIN
+      topics t ON q.topic_id = t.topic_id
+   LEFT JOIN
+      questions qu ON q.quiz_id = qu.quiz_id
+   WHERE
+      q.quiz_id = $1`,
       [id]
     );
 
@@ -423,20 +421,23 @@ async function getResponseByQuiz(req, res) {
       author_name: quizResult.rows[0].author_name,
       topic_id: quizResult.rows[0].topic_id,
       topic_name: quizResult.rows[0].topic_name,
-      questions: quizResult.rows.map(row => ({
-        question_id: row.question_id,
-        question_text: row.question_text,
-        question_ans1: row.question_ans1,
-        question_ans2: row.question_ans2,
-        question_ans3: row.question_ans3,
-        question_ans4: row.question_ans4,
-        correct_answer: row.correct_answer
-      })).filter(q => q.question_id !== null),
+      questions: quizResult.rows
+        .map((row) => ({
+          question_id: row.question_id,
+          question_text: row.question_text,
+          question_ans1: row.question_ans1,
+          question_ans2: row.question_ans2,
+          question_ans3: row.question_ans3,
+          question_ans4: row.question_ans4,
+          correct_answer: row.correct_answer,
+          active: row.question_active,
+        }))
+        .filter((q) => q.question_id !== null),
       QuizStats: {
         average_score: 0,
         average_confidence: 0,
-        averagePerformance: 0
-      }
+        averagePerformance: 0,
+      },
     };
 
     // Fetch reports and their responses
@@ -472,7 +473,7 @@ async function getResponseByQuiz(req, res) {
     let totalConfidence = 0;
     let totalReports = 0;
 
-    responseResult.rows.forEach(row => {
+    responseResult.rows.forEach((row) => {
       if (!reportsMap.has(row.report_id)) {
         reportsMap.set(row.report_id, {
           report_id: row.report_id,
@@ -482,7 +483,7 @@ async function getResponseByQuiz(req, res) {
           created_at: row.created_at,
           user_score: row.user_score,
           report_analysis: row.report_analysis,
-          responses: []
+          responses: [],
         });
         totalScore += row.user_score;
         totalReports++;
@@ -493,7 +494,7 @@ async function getResponseByQuiz(req, res) {
         question_id: row.question_id,
         question_text: row.question_text,
         user_answer: row.user_answer,
-        user_confidence: row.user_confidence
+        user_confidence: row.user_confidence,
       });
 
       totalConfidence += row.user_confidence;
@@ -504,9 +505,15 @@ async function getResponseByQuiz(req, res) {
     const quizLength = quizData.questions.length;
 
     const numResponses = responseResult.rows.length / quizLength;
-    const averageScore = responseResult.rows.length ? Math.round((100 / quizLength) * (totalScore / numResponses)) : 0;
-    const averageConfidence = responseResult.rows.length ? Math.round((totalConfidence / responseResult.rows.length) * 10) : 0;
-    const averagePerformance = responseResult.rows.length ? Math.round((averageConfidence + averageScore) / 2) : 0;
+    const averageScore = responseResult.rows.length
+      ? Math.round((100 / quizLength) * (totalScore / numResponses))
+      : 0;
+    const averageConfidence = responseResult.rows.length
+      ? Math.round((totalConfidence / responseResult.rows.length) * 10)
+      : 0;
+    const averagePerformance = responseResult.rows.length
+      ? Math.round((averageConfidence + averageScore) / 2)
+      : 0;
 
     // Update quiz stats
     quizData.QuizStats.average_score = averageScore;
@@ -516,17 +523,16 @@ async function getResponseByQuiz(req, res) {
     // Combine quiz data and reports
     const result = {
       QuizData: quizData,
-      QuizSubmissions: reports
+      QuizSubmissions: reports,
     };
 
     res.status(200).json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "An error occurred while fetching responses" });
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching responses" });
   }
 }
 
-
-
-
-export { postResponse, getResponse, getResponseByUser,getResponseByQuiz };
+export { postResponse, getResponse, getResponseByUser, getResponseByQuiz };
