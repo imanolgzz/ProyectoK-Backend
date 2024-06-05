@@ -125,30 +125,30 @@ async function getQuizById(req, res) {
 }
 
 async function createQuiz(req, res) {
-    const sessionKey = req.params.sessionKey;
-    console.log("Session key", sessionKey);
-    // check if the session key is valid
-    const sessionResult = await client.query(
-        "SELECT * FROM sessions WHERE session_key = $1",
-        [sessionKey]
-      );
+  const sessionKey = req.params.sessionKey;
+  console.log("Session key", sessionKey);
+  // check if the session key is valid
+  const sessionResult = await client.query(
+    "SELECT * FROM sessions WHERE session_key = $1",
+    [sessionKey]
+  );
 
-      if (sessionResult.rows.length > 0) {
-        const session = sessionResult.rows[0];
-        const createdAt = new Date(session.created_at);
-        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+  if (sessionResult.rows.length > 0) {
+    const session = sessionResult.rows[0];
+    const createdAt = new Date(session.created_at);
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
 
-        if (createdAt >= twoHoursAgo) {
-          // The session was created less than 2 hours ago
-          // continue with the request
-        } else {
-          // The session was created more than 2 hours ago
-          return res.status(401).json({ message: "Session expired" });
-        }
-      } else {
-        // No session found
-        return res.status(401).json({ message: "Invalid session key" });
-      }
+    if (createdAt >= twoHoursAgo) {
+      // The session was created less than 2 hours ago
+      // continue with the request
+    } else {
+      // The session was created more than 2 hours ago
+      return res.status(401).json({ message: "Session expired" });
+    }
+  } else {
+    // No session found
+    return res.status(401).json({ message: "Invalid session key" });
+  }
 
   try {
     const { adminId, topicId, name, questions } = req.body;
@@ -234,7 +234,7 @@ async function updateQuiz(req, res) {
           quiz_id,
           admin_id,
           topic_id,
-          quiz_name
+          quiz_name,
         ]);
 
         // Fetch current questions associated with the quiz
@@ -251,28 +251,45 @@ async function updateQuiz(req, res) {
             return (
               newQuestion.question === existingQuestion.question &&
               JSON.stringify(newQuestion.options.sort()) ===
-                JSON.stringify([
-                  existingQuestion.question_ans1,
-                  existingQuestion.question_ans2,
-                  existingQuestion.question_ans3,
-                  existingQuestion.question_ans4,
-                ].sort())
+                JSON.stringify(
+                  [
+                    existingQuestion.question_ans1,
+                    existingQuestion.question_ans2,
+                    existingQuestion.question_ans3,
+                    existingQuestion.question_ans4,
+                  ].sort()
+                )
             );
           });
         });
 
         // Insert new questions
         for (const newQuestion of newQuestions) {
-          await client.query("CALL insert_question2($1, $2, $3, $4, $5, $6, $7, $8)", [
-            quiz_id,
-            newQuestion.question,
-            newQuestion.options[0],
-            newQuestion.options[1],
-            newQuestion.options[2],
-            newQuestion.options[3],
-            newQuestion.correct_answer,
-            newQuestion.active,
-          ]);
+          await client.query(
+            "CALL insert_question2($1, $2, $3, $4, $5, $6, $7, $8)",
+            [
+              quiz_id,
+              newQuestion.question,
+              newQuestion.options[0],
+              newQuestion.options[1],
+              newQuestion.options[2],
+              newQuestion.options[3],
+              newQuestion.correct_answer,
+              newQuestion.active,
+            ]
+          );
+        }
+        // Deactivate questions
+        for (const question of questions) {
+          const currentQuestion = currentQuestions.find(
+            (q) => q.question_id === question.question_id
+          );
+          if (currentQuestion && currentQuestion.active && !question.active) {
+            await client.query(
+              "UPDATE questions SET active = false WHERE question_id = $1",
+              [question.question_id]
+            );
+          }
         }
 
         return res.status(200).json({ message: "Quiz updated successfully" });
@@ -290,7 +307,4 @@ async function updateQuiz(req, res) {
   }
 }
 
-
-
-
-export { getQuizes, getQuizById, createQuiz, getTopics,updateQuiz };
+export { getQuizes, getQuizById, createQuiz, getTopics, updateQuiz };
