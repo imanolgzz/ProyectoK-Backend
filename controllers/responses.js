@@ -383,30 +383,31 @@ async function getResponseByQuiz(req, res) {
     // Fetch quiz information and questions
     const quizResult = await client.query(
       `SELECT
-      q.quiz_id,
-      q.quiz_name,
-      q.admin_id,
-      a.user_name AS author_name,
-      q.topic_id,
-      t.topic_name,
-      qu.question_id,
-      qu.question AS question_text,
-      qu.question_ans1,
-      qu.question_ans2,
-      qu.question_ans3,
-      qu.question_ans4,
-      qu.correct_answer,
-      qu.active AS question_active
-   FROM
-      quiz q
-   INNER JOIN
-      users a ON q.admin_id = a.user_id
-   INNER JOIN
-      topics t ON q.topic_id = t.topic_id
-   LEFT JOIN
-      questions qu ON q.quiz_id = qu.quiz_id
-   WHERE
-      q.quiz_id = $1`,
+          q.quiz_id,
+          q.quiz_name,
+          q.admin_id,
+          a.first_name,
+          a.last_name,
+          q.topic_id,
+          t.topic_name,
+          qu.question_id,
+          qu.question AS question_text,
+          qu.question_ans1,
+          qu.question_ans2,
+          qu.question_ans3,
+          qu.question_ans4,
+          qu.correct_answer,
+          qu.active AS question_active
+       FROM
+          quiz q
+       INNER JOIN
+          users a ON q.admin_id = a.user_id
+       INNER JOIN
+          topics t ON q.topic_id = t.topic_id
+       LEFT JOIN
+          questions qu ON q.quiz_id = qu.quiz_id
+       WHERE
+          q.quiz_id = $1`,
       [id]
     );
 
@@ -418,7 +419,7 @@ async function getResponseByQuiz(req, res) {
       quiz_id: quizResult.rows[0].quiz_id,
       quiz_name: quizResult.rows[0].quiz_name,
       admin_id: quizResult.rows[0].admin_id,
-      author_name: quizResult.rows[0].author_name,
+      author_name: quizResult.rows[0].first_name + " " + quizResult.rows[0].last_name,
       topic_id: quizResult.rows[0].topic_id,
       topic_name: quizResult.rows[0].topic_name,
       questions: quizResult.rows
@@ -442,31 +443,32 @@ async function getResponseByQuiz(req, res) {
 
     // Fetch reports and their responses
     const responseResult = await client.query(
-      `SELECT
-          ar.report_id,
-          ar.quiz_id,
-          ar.user_id,
-          u.user_name AS user_name,
-          ar.created_at,
-          r.response_id,
-          r.question_id,
-          q_info.question AS question_text,
-          r.answer AS user_answer,
-          r.confidence AS user_confidence,
-          ar.score AS user_score,
-          ar.analysis AS report_analysis
-       FROM
-          answer_reports ar
-       INNER JOIN
-          users u ON ar.user_id = u.user_id
-       INNER JOIN
-          responses r ON ar.report_id = r.report_id
-       INNER JOIN
-          questions q_info ON r.question_id = q_info.question_id
-       WHERE
-          ar.quiz_id = $1 AND r.question_id IN (SELECT question_id FROM questions WHERE quiz_id = $1)`,
-      [id]
-    );
+  `SELECT
+      ar.report_id,
+      ar.quiz_id,
+      ar.user_id,
+      u.first_name,
+      u.last_name,
+      ar.created_at,
+      r.response_id,
+      r.question_id,
+      q_info.question AS question_text,
+      r.answer AS user_answer,
+      r.confidence AS user_confidence,
+      ar.score AS user_score,
+      ar.analysis AS report_analysis
+   FROM
+      answer_reports ar
+   INNER JOIN
+      users u ON ar.user_id = u.user_id
+   INNER JOIN
+      responses r ON ar.report_id = r.report_id
+   INNER JOIN
+      questions q_info ON r.question_id = q_info.question_id
+   WHERE
+      ar.quiz_id = $1 AND r.question_id IN (SELECT question_id FROM questions WHERE quiz_id = $1)`,
+  [id]
+);
 
     const reportsMap = new Map();
     let totalScore = 0;
@@ -479,7 +481,7 @@ async function getResponseByQuiz(req, res) {
           report_id: row.report_id,
           quiz_id: row.quiz_id,
           user_id: row.user_id,
-          user_name: row.user_name,
+          user_name: row.first_name + ' ' + row.last_name,
           created_at: row.created_at,
           user_score: row.user_score,
           report_analysis: row.report_analysis,
