@@ -443,32 +443,32 @@ async function getResponseByQuiz(req, res) {
 
     // Fetch reports and their responses
     const responseResult = await client.query(
-  `SELECT
-      ar.report_id,
-      ar.quiz_id,
-      ar.user_id,
-      u.first_name,
-      u.last_name,
-      ar.created_at,
-      r.response_id,
-      r.question_id,
-      q_info.question AS question_text,
-      r.answer AS user_answer,
-      r.confidence AS user_confidence,
-      ar.score AS user_score,
-      ar.analysis AS report_analysis
-   FROM
-      answer_reports ar
-   INNER JOIN
-      users u ON ar.user_id = u.user_id
-   INNER JOIN
-      responses r ON ar.report_id = r.report_id
-   INNER JOIN
-      questions q_info ON r.question_id = q_info.question_id
-   WHERE
-      ar.quiz_id = $1 AND r.question_id IN (SELECT question_id FROM questions WHERE quiz_id = $1)`,
-  [id]
-);
+      `SELECT
+          ar.report_id,
+          ar.quiz_id,
+          ar.user_id,
+          u.first_name,
+          u.last_name,
+          ar.created_at,
+          r.response_id,
+          r.question_id,
+          q_info.question AS question_text,
+          r.answer AS user_answer,
+          r.confidence AS user_confidence,
+          ar.score AS user_score,
+          ar.analysis AS report_analysis
+      FROM
+          answer_reports ar
+      INNER JOIN
+          users u ON ar.user_id = u.user_id
+      INNER JOIN
+          responses r ON ar.report_id = r.report_id
+      INNER JOIN
+          questions q_info ON r.question_id = q_info.question_id
+      WHERE
+          ar.quiz_id = $1 AND r.question_id IN (SELECT question_id FROM questions WHERE quiz_id = $1)`,
+      [id]
+    );
 
     const reportsMap = new Map();
     let totalScore = 0;
