@@ -195,6 +195,31 @@ async function createQuiz(req, res) {
 
 async function getTopics(req, res) {
   console.log("Getting topics");
+  // check the session on headers
+  const sessionKey = req.headers.sessionkey;
+  console.log("Session key", sessionKey);
+  // check if the session key is valid
+  const sessionResult = await client.query(
+    "SELECT * FROM sessions WHERE session_key = $1",
+    [sessionKey]
+  );
+  if (sessionResult.rows.length > 0) {
+    const session = sessionResult.rows[0];
+    const createdAt = new Date(session.created_at);
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+    if (createdAt >= twoHoursAgo) {
+      // The session was created less than 2 hours ago
+      // continue with the request
+    } else {
+      // The session was created more than 2 hours ago
+      return res.status(401).json({ message: "Session expired" });
+    }
+  } else {
+    // No session found
+    return res.status(401).json({ message: "Invalid session key" });
+  }
+
   client.query("SELECT * FROM topics", (err, result) => {
     if (err) {
       console.log("Error executing query", err);
