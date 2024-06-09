@@ -245,11 +245,13 @@ async function getResponse(req, res) {
     console.log(reportId);
 
     // Fetch the answer report
-    const reportResult = await client.query(
-      "SELECT * FROM answer_reports WHERE report_id = $1",
-      [reportId]
-    );
-    console.log(reportResult.rows);
+const reportResult = await client.query(
+  `SELECT ar.*, q.quiz_name
+   FROM answer_reports ar
+   INNER JOIN quiz q ON ar.quiz_id = q.quiz_id
+   WHERE ar.report_id = $1`,
+  [reportId]
+);
 
     if (reportResult.rows.length === 0) {
       res.status(404).json({ message: "Answer report not found" });
@@ -277,7 +279,6 @@ async function getResponse(req, res) {
           r.report_id = $1`,
       [reportId]
     );
-    console.log(responsesResult.rows);
 
     const responses = responsesResult.rows;
 

@@ -307,4 +307,52 @@ async function updateQuiz(req, res) {
   }
 }
 
-export { getQuizes, getQuizById, createQuiz, getTopics, updateQuiz };
+async function postTopic(req, res) {
+  console.log("Creating topic");
+  const sessionKey = req.headers.sessionkey;
+  console.log("Session", req.headers);
+  console.log("Session key", sessionKey);
+
+  try {
+    // Check if session is valid
+    const sessionResult = await client.query(
+      "SELECT * FROM sessions WHERE session_key = $1",
+      [sessionKey]
+    );
+
+    if (sessionResult.rows.length > 0) {
+      const session = sessionResult.rows[0];
+      const createdAt = new Date(session.created_at);
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+      if (createdAt >= twoHoursAgo) {
+        // The session was created less than 2 hours ago
+
+        // Extract data from request body
+        const { topic_name } = req.body;
+        if (!topic_name) {
+          return res.status(400).json({ message: "Missing topic_name" });
+        }
+
+        // Insert topic
+        await client.query("INSERT INTO topics (topic_name) VALUES ($1)", [
+          topic_name,
+        ]);
+
+        return res.status(201).json({ message: "Topic created successfully" });
+      } else {
+        // The session was created more than 2 hours ago
+        return res.status(401).json({ message: "Session expired" });
+      }
+    } else {
+      // No session found
+      return res.status(401).json({ message: "Invalid session key" });
+    }
+  } catch (error) {
+    console.error("Error creating topic:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+
+export { getQuizes, getQuizById, createQuiz, getTopics, updateQuiz, postTopic };

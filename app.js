@@ -3,6 +3,7 @@ import cors from 'cors';
 import users from './routes/users.js';
 import quizes from './routes/quizes.js';
 import responses from './routes/responses.js';
+import chatbot from './routes/chatbot.js';
 
 const app = express();
 const port = 2025;
@@ -21,6 +22,7 @@ app.get('/', (req, res) => {
 app.use('/users', users);
 app.use('/quizes', quizes);
 app.use('/responses', responses);
+app.use('/chatbot', chatbot);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
