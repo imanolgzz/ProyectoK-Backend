@@ -1,5 +1,4 @@
-const express = require("express");
-const client = require("../helpers/postgres.ts");
+import client from "../helpers/postgres.js";
 
 // this file is to have the controlers for each route
 
@@ -63,12 +62,10 @@ async function getUserByEmail(req, res) {
                               .json({ message: "Error selecting session" });
                           } else {
                             console.log("Session selected", selectResult.rows);
-                            res
-                              .status(200)
-                              .json({
-                                user: result.rows[0],
-                                session: selectResult.rows[0],
-                              });
+                            res.status(200).json({
+                              user: result.rows[0],
+                              session: selectResult.rows[0],
+                            });
                           }
                         }
                       );
@@ -84,7 +81,6 @@ async function getUserByEmail(req, res) {
   );
 }
 
-// create a new user
 async function createUser(req, res) {
   try {
     const { username, email, firstName, lastName, isAdmin } = req.body;
@@ -99,6 +95,7 @@ async function createUser(req, res) {
         } else {
           console.log("Query result", result.rows);
           const userId = result.rows[0].user_id;
+          console.log("User ID", userId);
           client.query(
             "SELECT * FROM sessions WHERE user_id = $1",
             [userId],
@@ -110,11 +107,29 @@ async function createUser(req, res) {
                   .json({ message: "Error executing session query" });
               } else {
                 console.log("Session query result", sessionResult.rows);
-                res.status(200).json({
-                  message: "User created successfully",
-                  user: result.rows[0],
-                  session: sessionResult.rows[0],
-                });
+                if (sessionResult.rows.length === 0) {
+                  console.log("No session found for user");
+                }
+                // Query to select the user by their ID
+                client.query(
+                  "SELECT * FROM users WHERE user_id = $1",
+                  [userId],
+                  (err, userResult) => {
+                    if (err) {
+                      console.log("Error executing user query", err);
+                      res
+                        .status(500)
+                        .json({ message: "Error executing user query" });
+                    } else {
+                      console.log("User query result", userResult.rows);
+                      res.status(200).json({
+                        message: "User created successfully",
+                        user: userResult.rows[0], // Return the user from the user query
+                        session: sessionResult.rows[0],
+                      });
+                    }
+                  }
+                );
               }
             }
           );
@@ -127,6 +142,4 @@ async function createUser(req, res) {
   }
 }
 
-exports.getUsers = getUsers;
-exports.getUserByEmail = getUserByEmail;
-exports.createUser = createUser;
+export { getUsers, getUserByEmail, createUser };
